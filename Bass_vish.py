@@ -19,13 +19,20 @@ def solve_bass_model(p, q, m, T=50):
     return t, N.flatten()
 
 def generate_random_cumulative_adopters():
+    """Generates random analogue data with small noise"""
     base_values = np.array([0, 2, 7, 13, 19, 25, 30, 34, 38, 41, 43])
     noise = np.random.randint(-2, 2, size=base_values.shape)  # Add small random noise
     return np.clip(base_values + noise, 0, None)  # Ensure values are non-negative
 
-# Initialize session state for analogue data if not already set
+# Initialize session state for analogue data and parameters if not set
 if "analogue_data" not in st.session_state:
     st.session_state.analogue_data = [generate_random_cumulative_adopters() for _ in range(5)]
+
+if "analogue_params" not in st.session_state:
+    st.session_state.analogue_params = {
+        f"analogue_{i}": {"p": np.random.uniform(0.01, 0.1), "q": np.random.uniform(0.1, 0.5)}
+        for i in range(5)
+    }
 
 st.title("Bass Diffusion Model with Analogue Curves")
 st.sidebar.header("Model Parameters")
@@ -55,7 +62,7 @@ analogue_results = []
 for i in range(num_curves):
     st.sidebar.subheader(f"Analogue {i+1} Settings")
     use_synthetic = st.sidebar.checkbox(f"Use Synthetic Data for Analogue {i+1}", value=True, key=f"synthetic_{i}")
-    
+
     if not use_synthetic:
         user_input = st.sidebar.text_input(
             f"Enter comma-separated values for Analogue {i+1}", 
@@ -68,8 +75,11 @@ for i in range(num_curves):
             except ValueError:
                 st.sidebar.error(f"Invalid input for Analogue {i+1}. Please enter numbers separated by commas.")
 
-    p_analogue = np.random.uniform(0.01, 0.1)
-    q_analogue = np.random.uniform(0.1, 0.5)
+    # Load analogue-specific p and q from session state
+    p_analogue = st.session_state.analogue_params[f"analogue_{i}"]["p"]
+    q_analogue = st.session_state.analogue_params[f"analogue_{i}"]["q"]
+
+    # Solve Bass Model for analogue
     t_analogue, N_analogue = solve_bass_model(p_analogue, q_analogue, m, T)
 
     fig.add_trace(go.Scatter(
@@ -97,8 +107,17 @@ st.plotly_chart(fig, use_container_width=False)
 # Display Final Table
 st.write("### Summary Table")
 table_data = [["Product X", np.argmax(np.diff(N)), p, q, m, int(N[-1])]] + analogue_results
-st.table([("Product", "Time TO Peak", "P", "Q", "M", "Adopters")] + table_data)
+st.table([("Product", "Time To Peak", "P", "Q", "M", "Adopters")] + table_data)
 
+# Reset Analogue Button
 if st.sidebar.button("Reset Analogues"):
     st.session_state.analogue_data = [generate_random_cumulative_adopters() for _ in range(5)]
+    
+    # Reset stored analogue p and q values
+    for i in range(5):
+        st.session_state.analogue_params[f"analogue_{i}"] = {
+            "p": np.random.uniform(0.01, 0.1),
+            "q": np.random.uniform(0.1, 0.5)
+        }
+
     st.rerun()
