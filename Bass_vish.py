@@ -2,7 +2,6 @@ import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
 from scipy.integrate import odeint
-from scipy.optimize import curve_fit
 
 # Set wide mode 
 st.set_page_config(layout="wide")
@@ -18,11 +17,6 @@ def solve_bass_model(p, q, m, T=50):
     N0 = 0  # Initial condition: no adopters at t=0
     N = odeint(bass_diffusion, N0, t, args=(p, q, m))
     return t, N.flatten()
-
-def bass_model(t, p, q, M):
-    A = (p + q) / M
-    B = p * q / M
-    return M * A * (1 - np.exp(-A * t)) / (1 + (B / A) * (np.exp(-A * t)))
 
 def generate_random_cumulative_adopters():
     base_values = np.array([0, 2, 7, 13, 19, 25, 30, 34, 38, 41, 43])
@@ -60,7 +54,6 @@ fig.add_trace(go.Scatter(
 analogue_results = []
 for i in range(num_curves):
     st.sidebar.subheader(f"Analogue {i+1} Settings")
-    
     use_synthetic = st.sidebar.checkbox(f"Use Synthetic Data for Analogue {i+1}", value=True, key=f"synthetic_{i}")
     
     if not use_synthetic:
@@ -75,32 +68,18 @@ for i in range(num_curves):
             except ValueError:
                 st.sidebar.error(f"Invalid input for Analogue {i+1}. Please enter numbers separated by commas.")
 
-    time_data = np.arange(len(st.session_state.analogue_data[i]))
-    adopters_data = st.session_state.analogue_data[i] * 0.001
-    
-    try:
-        params, _ = curve_fit(
-            bass_model, 
-            time_data, 
-            adopters_data, 
-            p0=[0.01, 0.3, 100],  # Initial guess
-            bounds=([0.001, 0.01, 50], [1.0, 1.0, 100000]),  # Keep p and q in range
-            maxfev=5000  # Allow more iterations for convergence
-        )
-        
-        p_analogue, q_analogue, m_analogue = params
-        t_analogue, N_analogue = solve_bass_model(p_analogue, q_analogue, m, T)
+    p_analogue = np.random.uniform(0.01, 0.1)
+    q_analogue = np.random.uniform(0.1, 0.5)
+    t_analogue, N_analogue = solve_bass_model(p_analogue, q_analogue, m, T)
 
-        fig.add_trace(go.Scatter(
-            x=t_analogue, y=N_analogue, mode='lines', 
-            name=f"Analogue {i+1} (p={p_analogue:.2f}, q={q_analogue:.2f})",
-            line=dict(dash='dash'),
-            hovertemplate=f"Time: %{{x}}<br>Adopters: %{{y}}<br><b>p:</b> {p_analogue:.2f}<br><b>q:</b> {q_analogue:.2f}"
-        ))
-        
-        analogue_results.append([f"Analogue {i+1}", np.argmax(np.diff(N_analogue)), p_analogue, q_analogue, m_analogue, int(N_analogue[-1])])
-    except:
-        st.sidebar.error(f"Curve fitting failed for Analogue {i+1}. Try different values.")
+    fig.add_trace(go.Scatter(
+        x=t_analogue, y=N_analogue, mode='lines', 
+        name=f"Analogue {i+1} (p={p_analogue:.2f}, q={q_analogue:.2f})",
+        line=dict(dash='dash'),
+        hovertemplate=f"Time: %{{x}}<br>Adopters: %{{y}}<br><b>p:</b> {p_analogue:.2f}<br><b>q:</b> {q_analogue:.2f}"
+    ))
+    
+    analogue_results.append([f"Analogue {i+1}", np.argmax(np.diff(N_analogue)), p_analogue, q_analogue, m, int(N_analogue[-1])])
 
 fig.update_layout(
     title="Bass Diffusion Model vs. Analogue Curves",
