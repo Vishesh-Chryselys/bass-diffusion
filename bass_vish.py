@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
 from scipy.integrate import odeint
+import pandas as pd
 
 # Set wide mode 
 st.set_page_config(layout="wide")
@@ -107,7 +108,15 @@ st.plotly_chart(fig, use_container_width=False)
 # Display Final Table
 st.write("### Summary Table")
 table_data = [["Product X", np.argmax(np.diff(N)), p, q, m, int(N[-1])]] + analogue_results
-st.table([("Product", "Time To Peak", "P", "Q", "M", "Adopters")] + table_data)
+# Define column names
+columns = ["Product", "Time To Peak", "P", "Q", "M", "Adopters"]
+
+# Create DataFrame
+df_summary = pd.DataFrame(table_data, columns=columns)
+
+# Display as a properly formatted table
+st.dataframe(df_summary, width=1200, hide_index=True)
+
 
 # Reset Analogue Button
 if st.sidebar.button("Reset Analogues"):
