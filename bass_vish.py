@@ -41,7 +41,7 @@ st.sidebar.header("Model Parameters")
 # User Inputs
 p = st.sidebar.slider("Innovation Coefficient (p)", 0.01, 1.0, 0.03, 0.001)
 q = st.sidebar.slider("Imitation Coefficient (q)", 0.01, 1.0, 0.38, 0.01)
-m = st.sidebar.slider("Market Size (m)", 1, 1000, 100000, 1000)
+m = st.sidebar.slider("Market Size (m)", 0, 100000, 10000, 1000)
 T = st.sidebar.slider("Time Period (Years)", 10, 100, 50, 5)
 num_curves = st.sidebar.slider("Number of Analogue Curves", 1, 5, 3)
 
